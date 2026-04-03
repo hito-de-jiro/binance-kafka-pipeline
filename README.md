@@ -39,16 +39,16 @@ DuckDB / DQL Analytics
 ## Tech Stack
 
 | Layer | Tool | Version |
-|---|---|---|
-| Streaming | Apache Kafka | 7.6.0 |
-| Producer / Consumer | Python | 3.11+ |
-| Kafka client | confluent-kafka | 2.3.0 |
-| Serialization | pyarrow | 16.0.0 |
-| Transformation | dbt-core | 1.10.1 |
-| dbt adapter | dbt-duckdb | 1.8.0 |
-| Analytics | DuckDB | 1.1.4 |
-| Package manager | uv | latest |
-| Infrastructure | Docker Compose | — |
+|---|---|---------|
+| Streaming | Apache Kafka | 7.6.0   |
+| Producer / Consumer | Python | 3.11.9  |
+| Kafka client | confluent-kafka | 2.13.2  |
+| Serialization | pyarrow | 15.0.2  |
+| Transformation | dbt-core | 1.10.1  |
+| dbt adapter | dbt-duckdb | 1.16.3  |
+| Analytics | DuckDB | 1.4.4   |
+| Package manager | uv | latest  |
+| Infrastructure | Docker Compose | —       |
 
 ---
 
@@ -99,7 +99,7 @@ binance-kafka-pipeline/
 ### Prerequisites
 
 - Docker + Docker Compose
-- Python 3.11+
+- Python 3.11.9
 - [uv](https://github.com/astral-sh/uv)
 
 ### 1. Clone and install dependencies

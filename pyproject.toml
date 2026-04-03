@@ -17,3 +17,21 @@ dependencies = [
     "matplotlib>=3.10.8",
     "jupyterlab>=4.5.6",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+    "black",
+    "ruff",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ipykernel",
+    "black",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
