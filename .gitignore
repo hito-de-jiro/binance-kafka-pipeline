@@ -30,6 +30,7 @@ data/
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
+analytics/charts/
 
 # OS
 .DS_Store
