@@ -1,0 +1,113 @@
+version: 2
+
+models:
+
+  # ----------------------------------------------------------
+  # stg_trades
+  # ----------------------------------------------------------
+  - name: stg_trades
+    description: >
+      Cleaned and typed trade events from the Bronze layer.
+      Duplicates removed, all columns cast to correct types,
+      timestamps converted from Unix ms to proper UTC timestamp.
+
+    columns:
+      - name: trade_id
+        description: "Unique trade ID assigned by Binance"
+        tests:
+          - not_null
+          - unique
+
+      - name: symbol
+        description: "Trading pair (BTCUSDT, ETHUSDT, SOLUSDT)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+      - name: price
+        description: "Execution price in USDT — must be positive"
+        tests:
+          - not_null
+
+      - name: quantity
+        description: "Amount of base asset — must be positive"
+        tests:
+          - not_null
+
+      - name: volume_usd
+        description: "price × quantity, rounded to 6 decimal places"
+        tests:
+          - not_null
+
+      - name: side
+        description: "BUY or SELL from the taker's perspective"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["BUY", "SELL"]
+
+      - name: traded_at
+        description: "UTC timestamp of the trade execution"
+        tests:
+          - not_null
+
+      - name: ingested_at
+        description: "UTC timestamp when the Kafka consumer wrote the record"
+        tests:
+          - not_null
+
+  # ----------------------------------------------------------
+  # stg_ohlcv_1min
+  # ----------------------------------------------------------
+  - name: stg_ohlcv_1min
+    description: >
+      1-minute OHLCV candles aggregated from stg_trades.
+      One row per symbol per minute.
+      Foundation for all Gold-layer moving averages and metrics.
+
+    columns:
+      - name: symbol
+        description: "Trading pair"
+        tests:
+          - not_null
+
+      - name: candle_time
+        description: "Candle open time, truncated to the minute (UTC)"
+        tests:
+          - not_null
+
+      - name: open
+        description: "First trade price in the minute"
+        tests:
+          - not_null
+
+      - name: high
+        description: "Highest trade price in the minute"
+        tests:
+          - not_null
+
+      - name: low
+        description: "Lowest trade price in the minute"
+        tests:
+          - not_null
+
+      - name: close
+        description: "Last trade price in the minute"
+        tests:
+          - not_null
+
+      - name: volume_usd
+        description: "Total traded value in USD for the minute"
+        tests:
+          - not_null
+
+      - name: vwap
+        description: "Volume-weighted average price for the minute"
+        tests:
+          - not_null
+
+      - name: volume_delta
+        description: "Buy volume minus sell volume — positive means buyers dominating"
+        tests:
+          - not_null
