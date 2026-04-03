@@ -1,0 +1,116 @@
+version: 2
+
+models:
+
+  # ----------------------------------------------------------
+  # mart_vwap
+  # ----------------------------------------------------------
+  - name: mart_vwap
+    description: >
+      VWAP metrics per symbol at two granularities:
+      rolling 30-min and 60-min (per candle), and hourly aggregates.
+      Use price_vs_vwap to identify when price deviates from fair value.
+
+    columns:
+      - name: symbol
+        tests: [not_null]
+
+      - name: candle_time
+        description: "1-minute candle timestamp (UTC)"
+        tests: [not_null]
+
+      - name: vwap_30min
+        description: "Rolling 30-minute VWAP"
+        tests: [not_null]
+
+      - name: vwap_60min
+        description: "Rolling 60-minute VWAP"
+        tests: [not_null]
+
+      - name: price_vs_vwap
+        description: "close minus vwap_30min — positive means price is above VWAP"
+        tests: [not_null]
+
+      - name: hourly_vwap
+        description: "VWAP for the full hour this candle belongs to"
+
+
+  # ----------------------------------------------------------
+  # mart_volatility
+  # ----------------------------------------------------------
+  - name: mart_volatility
+    description: >
+      Volatility metrics per symbol per 1-minute candle.
+      Includes Bollinger Bands, realized and annualized volatility,
+      ATR-14, and %B position indicator.
+
+    columns:
+      - name: symbol
+        tests: [not_null]
+
+      - name: candle_time
+        tests: [not_null]
+
+      - name: bb_upper
+        description: "Bollinger Band upper: SMA-20 + 2σ"
+
+      - name: bb_lower
+        description: "Bollinger Band lower: SMA-20 - 2σ"
+
+      - name: pct_b
+        description: >
+          Price position within Bollinger Bands.
+          > 1.0 = above upper band, < 0.0 = below lower band, 0.5 = at SMA.
+
+      - name: realized_vol_pct
+        description: "Std dev of 20-period log returns, expressed as percentage"
+
+      - name: annualized_vol
+        description: "Realized volatility annualized assuming 525,600 minutes per year"
+
+      - name: atr_14
+        description: "Average True Range over 14 periods"
+
+      - name: bb_bandwidth
+        description: "Band width relative to SMA — low values indicate a squeeze (breakout likely)"
+
+
+  # ----------------------------------------------------------
+  # mart_whale_trades
+  # ----------------------------------------------------------
+  - name: mart_whale_trades
+    description: >
+      Individual trades above the whale threshold (default $50,000 USD),
+      enriched with hourly market context and classified by size tier.
+      Use whale_net_pressure to gauge directional intent of large players.
+
+    columns:
+      - name: trade_id
+        tests: [not_null, unique]
+
+      - name: symbol
+        tests: [not_null]
+
+      - name: traded_at
+        tests: [not_null]
+
+      - name: volume_usd
+        description: "Trade size in USD — always >= whale_threshold"
+        tests: [not_null]
+
+      - name: whale_tier
+        description: "small ($50K+) / medium ($100K+) / large ($500K+) / mega ($1M+)"
+        tests:
+          - accepted_values:
+              values: ["small", "medium", "large", "mega"]
+
+      - name: side
+        tests:
+          - accepted_values:
+              values: ["BUY", "SELL"]
+
+      - name: pct_of_hour_volume
+        description: "This trade's share of the hour's total volume, as a percentage"
+
+      - name: rank_in_hour
+        description: "Rank of this trade within its hour by volume (1 = largest)"
