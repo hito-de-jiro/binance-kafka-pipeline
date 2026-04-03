@@ -1,0 +1,56 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw trade events written by the Kafka consumer (Parquet, hive-partitioned)"
+    schema: main
+
+    tables:
+      - name: trades
+        description: "All raw trades from Binance WebSocket — as-is, no transformations"
+
+        # Freshness check — ingested_at is set by the Kafka consumer
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after:  {count: 10, period: minute}
+          error_after: {count: 30, period: minute}
+
+        columns:
+          - name: trade_id
+            description: "Unique trade ID assigned by Binance"
+            tests:
+              - not_null
+              - unique
+
+          - name: symbol
+            description: "Trading pair (BTCUSDT, ETHUSDT, SOLUSDT)"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+          - name: price
+            description: "Execution price in USDT"
+            tests:
+              - not_null
+
+          - name: quantity
+            description: "Amount of base asset traded"
+            tests:
+              - not_null
+
+          - name: timestamp
+            description: "Trade timestamp — Unix milliseconds (UTC)"
+            tests:
+              - not_null
+
+          - name: side
+            description: "Trade direction from the taker's perspective"
+            tests:
+              - accepted_values:
+                  values: ["BUY", "SELL"]
+
+          - name: ingested_at
+            description: "ISO 8601 UTC timestamp set by the Kafka consumer"
+            tests:
+              - not_null

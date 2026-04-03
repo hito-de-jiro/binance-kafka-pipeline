@@ -58,7 +58,7 @@ dependencies = [
 requires-dist = [
     { name = "confluent-kafka", specifier = "==2.13.2" },
     { name = "dbt-core", specifier = "==1.10.1" },
-    { name = "dbt-duckdb", specifier = "==1.10.1" },
+    { name = "dbt-duckdb", extras = ["external"], specifier = "==1.10.1" },
     { name = "duckdb", specifier = "==1.4.4" },
     { name = "kafka-python", specifier = "==2.3.0" },
     { name = "pandas", specifier = "==2.2.2" },

@@ -1,0 +1,53 @@
+name:    "binance_pipeline"
+version: "1.0.0"
+profile: "binance_pipeline"
+
+# ----------------------------------------------------------
+# Directory layout
+# ----------------------------------------------------------
+model-paths:    ["models"]
+test-paths:     ["tests"]
+seed-paths:     ["seeds"]
+macro-paths:    ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path:   "target"
+clean-targets: ["target", "dbt_packages"]
+
+# ----------------------------------------------------------
+# Register Bronze Parquet as a DuckDB view before any model runs.
+# This replaces the need for dbt-external-tables or stage_external_sources.
+# ----------------------------------------------------------
+on-run-start:
+  - "CREATE OR REPLACE VIEW main.trades AS
+     SELECT * FROM read_parquet(
+       '{{ var(\"bronze_path\") }}/**/*.parquet',
+       hive_partitioning := true
+     )"
+
+# ----------------------------------------------------------
+# Global model defaults + per-layer overrides
+# ----------------------------------------------------------
+models:
+  binance_pipeline:
+
+    # --- Staging (Silver) ---
+    staging:
+      +schema:       silver
+      +materialized: view
+      +tags:         ["silver"]
+
+    # --- Marts (Gold) ---
+    marts:
+      +schema:       gold
+      +materialized: table
+      +tags:         ["gold"]
+
+# ----------------------------------------------------------
+# Variables — override at run time with --vars
+# ----------------------------------------------------------
+vars:
+  bronze_path:     "data/bronze/trades"
+  whale_threshold: 50000
+  ohlcv_interval:  "1 minute"
+  start_date:      "2024-01-01"

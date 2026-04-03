@@ -1,0 +1,28 @@
+binance_pipeline:
+  target: dev
+  outputs:
+
+    # ----------------------------------------------------------
+    # dev — local development, reads from Bronze Parquet files
+    # ----------------------------------------------------------
+    dev:
+      type: duckdb
+      path: "data/pipeline.duckdb"   # DuckDB database file (created automatically)
+      threads: 4
+
+      # Register Bronze Parquet files as external tables
+      # dbt-duckdb reads these paths at model run time
+      extensions:
+        - parquet
+        - httpfs
+
+    # ----------------------------------------------------------
+    # prod — same setup, separate DB file for clean separation
+    # ----------------------------------------------------------
+    prod:
+      type: duckdb
+      path: "data/pipeline_prod.duckdb"
+      threads: 8
+      extensions:
+        - parquet
+        - httpfs
