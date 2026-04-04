@@ -8,9 +8,10 @@ __pycache__/
 # dbt
 dbt_project/target/
 dbt_project/dbt_packages/
+dbt_project/package-lock.yml
 dbt_project/logs/
-profiles.yml        # contains local paths — each dev has their own
-*.user.yml          # local developer overrides — not for version control
+profiles.yml                    # contains local paths — each dev has their own
+dbt_project/.user.yml           # local developer overrides — not for version control
 
 # DuckDB
 *.duckdb
@@ -42,3 +43,4 @@ uv.lock
 
 # Environment variables
 .env
+/dbt_project/.user.yml
