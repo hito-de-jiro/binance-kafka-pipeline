@@ -6,9 +6,9 @@ __pycache__/
 .python-version
 
 # dbt
-target/
-dbt_packages/
-logs/
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
 profiles.yml        # contains local paths — each dev has their own
 *.user.yml          # local developer overrides — not for version control
 

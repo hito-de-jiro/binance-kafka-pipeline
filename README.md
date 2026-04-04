@@ -114,7 +114,7 @@ uv sync
 ### 2. Configure environment
 
 ```bash
-cp .env.example .env
+copy .env.example .env
 ```
 
 `.env.example`:
@@ -128,7 +128,7 @@ FLUSH_BATCH_SIZE=500
 ### 3. Configure dbt profile
 
 ```bash
-cp dbt_project/profiles.yml.example dbt_project/profiles.yml
+copy dbt_project\profiles.yml.example dbt_project\profiles.yml
 ```
 
 `profiles.yml.example`:
@@ -175,9 +175,9 @@ After ~30 seconds the first Parquet files will appear under `data/bronze/`.
 ### 6. Run dbt transformations
 
 ```bash
-cd dbt_project
-uv run dbt run --profiles-dir .
-uv run dbt test --profiles-dir .
+cd binance-kafka-pipeline
+uv run dbt run --profiles-dir dbt_project --project-dir dbt_project
+uv run dbt test --profiles-dir dbt_project --project-dir dbt_project
 ```
 
 ### 7. Query with DuckDB
