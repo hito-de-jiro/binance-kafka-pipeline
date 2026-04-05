@@ -174,18 +174,31 @@ After ~30 seconds the first Parquet files will appear under `data/bronze/`.
 
 ### 6. Run dbt transformations
 
+#### 6.1 Go to the project's dbt folder
 ```bash
 cd binance-kafka-pipeline
+```
+#### 6.2 Install dependencies (if there is packages.yml)
+```bash
+uv run dbt deps --profiles-dir dbt_project --project-dir dbt_project
+```
+#### 6.3 Build all models
+```bash
 uv run dbt run --profiles-dir dbt_project --project-dir dbt_project
+```
+#### 6.4 Run tests
+```bash
 uv run dbt test --profiles-dir dbt_project --project-dir dbt_project
 ```
-
+#### 6.5 View documentation
+```bash
+uv run dbt docs generate --profiles-dir dbt_project --project-dir dbt_project
+uv run dbt docs serve --profiles-dir dbt_project --project-dir dbt_project
+```
 ### 7. Query with DuckDB
-
 ```bash
 uv run python -c "import duckdb; duckdb.sql(\"SELECT * FROM read_parquet('data/bronze/trades/**/*.parquet', hive_partitioning=true) LIMIT 5\").show()"
 ```
-
 Or open `analytics/explore.ipynb` in Jupyter.
 
 ---
