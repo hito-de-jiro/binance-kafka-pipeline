@@ -16,4 +16,6 @@ dependencies = [
     "websocket-client==1.9.0",
     "matplotlib>=3.10.8",
     "jupyterlab>=4.5.6",
+    "streamlit>=1.56.0",
+    "plotly>=6.6.0",
 ]
