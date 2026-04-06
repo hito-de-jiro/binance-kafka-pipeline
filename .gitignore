@@ -1,46 +1,64 @@
+# =============================================================
 # Python
+# =============================================================
 .venv/
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .python-version
 
+# =============================================================
+# uv
+# =============================================================
+.uv/
+
+# =============================================================
+# Environment variables
+# =============================================================
+.env
+
+# =============================================================
 # dbt
+# =============================================================
 dbt_project/target/
 dbt_project/dbt_packages/
-dbt_project/package-lock.yml
 dbt_project/logs/
-profiles.yml                    # contains local paths — each dev has their own
-*.user.yml           # local developer overrides — not for version control
+dbt_project/profiles.yml
+dbt_project/*.user.yml
 
+# =============================================================
 # DuckDB
+# =============================================================
 *.duckdb
 *.duckdb.wal
 
-# Data — Bronze layer (real data, не пушимо в репо)
+# =============================================================
+# Data — Bronze layer (can be gigabytes, not for version control)
+# Run the producer/consumer locally to populate it.
+# =============================================================
 data/
 
+# =============================================================
+# Jupyter
+# =============================================================
+.ipynb_checkpoints/
+analytics/charts/
+
+# =============================================================
+# Streamlit
+# =============================================================
+.streamlit/secrets.toml
+
+# =============================================================
 # IDE
+# =============================================================
 .idea/
 .vscode/
 *.iml
 
-# PyBuilder
-.pybuilder/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-analytics/charts/
-
+# =============================================================
 # OS
+# =============================================================
 .DS_Store
 Thumbs.db
-
-# uv
-.uv/
-uv.lock
-
-# Environment variables
-.env
-/dbt_project/.user.yml

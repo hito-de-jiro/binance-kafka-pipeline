@@ -38,17 +38,18 @@ DuckDB / DQL Analytics
 
 ## Tech Stack
 
-| Layer | Tool | Version |
-|---|---|---------|
-| Streaming | Apache Kafka | 7.6.0   |
-| Producer / Consumer | Python | 3.11.9  |
-| Kafka client | confluent-kafka | 2.13.2  |
-| Serialization | pyarrow | 15.0.2  |
-| Transformation | dbt-core | 1.10.1  |
-| dbt adapter | dbt-duckdb | 1.16.3  |
-| Analytics | DuckDB | 1.4.4   |
-| Package manager | uv | latest  |
-| Infrastructure | Docker Compose | —       |
+| Layer               | Tool            | Version |
+|---------------------|-----------------|---------|
+| Streaming           | Apache Kafka    | 7.6.0   |
+| Producer / Consumer | Python          | 3.11.9  |
+| Kafka client        | confluent-kafka | 2.13.2  |
+| Serialization       | pyarrow         | 15.0.2  |
+| Transformation      | dbt-core        | 1.10.1  |
+| dbt adapter         | dbt-duckdb      | 1.10.1  |
+| Analytics           | DuckDB          | 1.4.4   |
+| Package manager     | uv              | latest  |
+| Infrastructure      | Docker Compose  | —       |
+| Dashboard           | Streamlit       | —       |
 
 ---
 
@@ -87,7 +88,11 @@ binance-kafka-pipeline/
 │           ├── mart_volatility.sql
 │           └── mart_whale_trades.sql
 │
+├── dashboard/
+│   └── dashboard.py            # Streamlit dashboard
+│
 └── analytics/
+    ├── carts/                  # Jupyter charts
     ├── queries.sql             # DQL reference queries
     └── explore.ipynb           # Jupyter exploration notebook
 ```
@@ -199,7 +204,20 @@ uv run dbt docs serve --profiles-dir dbt_project --project-dir dbt_project
 ```bash
 uv run python -c "import duckdb; duckdb.sql(\"SELECT * FROM read_parquet('data/bronze/trades/**/*.parquet', hive_partitioning=true) LIMIT 5\").show()"
 ```
+
+### 8. Analytics with Jupyter
+```bash
+uv run jupyter lab analytics/explore.ipynb
+```
 Or open `analytics/explore.ipynb` in Jupyter.
+
+### 9. Dashboard with Streamlit
+```bash
+streamlit run dashboard/dashboard.py
+```
+  Local URL: [link](http://localhost:8501) <br>
+  Network URL: [link](http://192.168.1.4:8501)
+
 
 ---
 
