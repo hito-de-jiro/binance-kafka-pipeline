@@ -19,3 +19,8 @@ dependencies = [
     "streamlit>=1.56.0",
     "plotly>=6.6.0",
 ]
+
+[dependency-groups]
+dev = [
+    "nbstripout>=0.9.1",
+]
