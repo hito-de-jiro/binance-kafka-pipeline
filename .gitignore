@@ -43,6 +43,8 @@ data/
 # Jupyter
 # =============================================================
 .ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+ipython_config.py
 analytics/charts/
 
 # =============================================================
