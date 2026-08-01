@@ -4,6 +4,7 @@ Binance Pipeline · Main Entry Point
 Starts and manages all pipeline components:
     - Binance WebSocket Producer
     - Kafka Consumer (Bronze layer writer)
+    - Stream Consumer (live VWAP / CVD → SQLite)
     - APScheduler (dbt runs every 5 minutes)
 
 Usage:
@@ -30,6 +31,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 ROOT = Path(__file__).parent
 PRODUCER = ROOT / "producer" / "binance_producer.py"
 CONSUMER = ROOT / "consumer" / "kafka_consumer.py"
+STREAM_CONSUMER = ROOT / "consumer" / "stream_consumer.py"
 DBT_PROJECT = ROOT / "dbt_project"
 
 # =============================================================
@@ -99,7 +101,12 @@ def watch_process():
     Check if any subprocess has crashed and restart it.
     Called by the scheduler every 60 seconds.
     """
-    for name, script in [("producer", PRODUCER), ("consumer", CONSUMER), ]:
+    watched = [
+        ("producer", PRODUCER),
+        ("consumer", CONSUMER),
+        ("stream", STREAM_CONSUMER),
+    ]
+    for name, script in watched:
         proc = processes.get(name)
         if proc and proc.poll() is not None:
             log.warning(f"{name} crashed (exit={proc.returncode}) — restarting")
@@ -213,10 +220,11 @@ def main():
 
     check_kafka()
 
-    # 1. Start producer and consumer
+    # 1. Start producer, bronze consumer, and live stream consumer
     start_process(name="producer", script=PRODUCER)
-    time.sleep(5)  # give producer time to connect before consumer starts
+    time.sleep(5)  # give producer time to connect before consumers start
     start_process(name="consumer", script=CONSUMER)
+    start_process(name="stream", script=STREAM_CONSUMER)
 
     # 2. Start scheduler (dbt + process watcher)
     global scheduler
