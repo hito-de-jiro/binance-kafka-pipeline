@@ -17,21 +17,21 @@ Python Producer
     ▼
 Apache Kafka
     │   topics: btcusdt_trades / ethusdt_trades / solusdt_trades
-    ▼
-Python Consumer
-    │   batches → Parquet (snappy) with hive partitioning
-    ▼
-Bronze Layer  data/bronze/trades/symbol=BTCUSDT/year=.../month=.../day=.../
     │
-    ▼  dbt run
-Silver Layer  stg_trades · stg_ohlcv_1min
-    │         type casting · deduplication · OHLCV aggregation
-    ▼  dbt run
-Gold Layer    mart_vwap · mart_volatility · mart_whale_trades
-    │         VWAP · Bollinger Bands · rolling volatility · CVD
-    ▼
-DuckDB / DQL Analytics
-              ad-hoc queries · Jupyter notebooks
+    ├──────────────────────────────┐
+    ▼                              ▼
+Python Consumer (batch)      Stream Consumer (live)
+    │   batches → Parquet          │   sliding VWAP / CVD
+    ▼                              ▼
+Bronze Layer                   SQLite  data/live/stream.db
+    │                              │
+    ▼  dbt run (every 5 min)       │
+Silver / Gold                      │
+    │                              │
+    └──────────┬───────────────────┘
+               ▼
+        Streamlit Dashboard
+          live panel + batch analytics
 ```
 
 ---
@@ -66,10 +66,12 @@ binance-kafka-pipeline/
 │   └── binance_producer.py     # Binance WebSocket → Kafka
 │
 ├── consumer/
-│   └── kafka_consumer.py       # Kafka → Bronze Parquet
+│   ├── kafka_consumer.py       # Kafka → Bronze Parquet (batch)
+│   └── stream_consumer.py      # Kafka → live VWAP/CVD (SQLite)
 │
 ├── data/
 │   ├── bronze/                 # raw Parquet files (gitignored)
+│   ├── live/                   # stream.db — live metrics (gitignored)
 │   ├── silver/                 # created by dbt
 │   └── gold/                   # created by dbt
 │
@@ -171,11 +173,21 @@ Open two terminals:
 # Terminal 1 — stream trades from Binance into Kafka
 uv run python producer/binance_producer.py
 
-# Terminal 2 — consume from Kafka and write to Parquet
+# Terminal 2 — consume from Kafka and write to Parquet (batch / Bronze)
 uv run python consumer/kafka_consumer.py
+
+# Terminal 3 — live VWAP / CVD / whales → SQLite
+uv run python consumer/stream_consumer.py
+```
+
+Or start everything together:
+
+```bash
+uv run python main.py
 ```
 
 After ~30 seconds the first Parquet files will appear under `data/bronze/`.
+Live metrics appear immediately in `data/live/stream.db`.
 
 ### 6. Run dbt transformations
 
