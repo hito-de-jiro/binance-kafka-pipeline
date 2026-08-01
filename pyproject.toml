@@ -25,3 +25,8 @@ dependencies = [
 dev = [
     "nbstripout>=0.9.1",
 ]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.11"
