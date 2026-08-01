@@ -7,6 +7,7 @@ Run:
     streamlit run dashboard/dashboard.py
 """
 
+import sqlite3
 import time
 from pathlib import Path
 
@@ -36,6 +37,7 @@ DASHBOARD_DIR = Path(__file__).parent
 PROJECT_ROOT  = DASHBOARD_DIR.parent
 DB_PATH       = PROJECT_ROOT / "data" / "pipeline.duckdb"
 BRONZE_PATH   = PROJECT_ROOT / "data" / "bronze" / "trades"
+LIVE_DB_PATH  = PROJECT_ROOT / "data" / "live" / "stream.db"
 
 SILVER = "main_silver"
 GOLD   = "main_gold"
@@ -67,6 +69,17 @@ def query(sql: str) -> pd.DataFrame:
     return get_connection().sql(sql).df()
 
 
+def query_live(sql: str, params: tuple = ()) -> pd.DataFrame:
+    """Read-only query against the stream consumer SQLite DB."""
+    if not LIVE_DB_PATH.exists():
+        return pd.DataFrame()
+    con = sqlite3.connect(f"file:{LIVE_DB_PATH.as_posix()}?mode=ro", uri=True, timeout=5)
+    try:
+        return pd.read_sql_query(sql, con, params=params)
+    finally:
+        con.close()
+
+
 # =============================================================
 # Sidebar · Filters
 # =============================================================
@@ -96,27 +109,140 @@ with st.sidebar:
         step=10_000,
     )
 
-    auto_refresh = st.toggle("Auto-refresh (30s)", value=False)
+    live_refresh = st.toggle("Live refresh (2s)", value=True)
+    auto_refresh = st.toggle("Batch refresh (30s)", value=False)
 
     st.divider()
     st.caption("Binance Kafka Pipeline")
-    st.caption("Bronze → Silver → Gold · dbt + DuckDB")
+    st.caption("Stream (SQLite) + Bronze → Silver → Gold")
+
 
 # =============================================================
-# Auto-refresh
+# Live panel helper
 # =============================================================
 
-if auto_refresh:
-    time.sleep(30)
-    st.rerun()
+def _render_live_panel(symbol: str, color: str):
+    st.subheader(f"⚡ Live · {symbol}")
+    try:
+        live = query_live(
+            "SELECT * FROM metrics WHERE symbol = ?",
+            (symbol,),
+        )
+
+        if live.empty:
+            st.info(
+                "No live metrics yet. Start the stream consumer:\n\n"
+                "`uv run python consumer/stream_consumer.py`"
+            )
+            return
+
+        row = live.iloc[0]
+
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
+        c1.metric("Price", f"${row['last_price']:,.2f}", delta=row["last_side"])
+        c2.metric("VWAP 5m", f"${row['vwap_5m']:,.2f}" if pd.notna(row["vwap_5m"]) else "—")
+        c3.metric("VWAP 30m", f"${row['vwap_30m']:,.2f}" if pd.notna(row["vwap_30m"]) else "—")
+        c4.metric("CVD 5m", f"${row['cvd_5m']:+,.0f}" if pd.notna(row["cvd_5m"]) else "—")
+        c5.metric("CVD session", f"${row['session_cvd']:+,.0f}")
+        c6.metric("Trades / 1m", f"{int(row['trades_1m'])}")
+
+        vs = row["price_vs_vwap_5m"]
+        vs_txt = f"{vs:+.2f}" if pd.notna(vs) else "—"
+        st.caption(
+            f"Updated {row['updated_at']} · price vs VWAP 5m: {vs_txt} · "
+            f"vol 5m ${row['volume_5m']:,.0f} · session trades {int(row['session_trades']):,}"
+        )
+
+        ticks = query_live(
+            """
+            SELECT ts_ms, price, vwap_5m, cvd_5m, session_cvd
+            FROM ticks
+            WHERE symbol = ?
+            ORDER BY ts_ms DESC
+            LIMIT 600
+            """,
+            (symbol,),
+        )
+
+        if not ticks.empty:
+            ticks = ticks.sort_values("ts_ms")
+            ticks["t"] = pd.to_datetime(ticks["ts_ms"], unit="ms", utc=True)
+
+            fig_live = make_subplots(
+                rows=2, cols=1,
+                shared_xaxes=True,
+                row_heights=[0.65, 0.35],
+                vertical_spacing=0.04,
+            )
+            fig_live.add_trace(go.Scatter(
+                x=ticks["t"], y=ticks["price"],
+                name="Price", line=dict(color=color, width=1.5),
+            ), row=1, col=1)
+            fig_live.add_trace(go.Scatter(
+                x=ticks["t"], y=ticks["vwap_5m"],
+                name="VWAP 5m",
+                line=dict(color="#58a6ff", width=1.5, dash="dot"),
+            ), row=1, col=1)
+            fig_live.add_trace(go.Scatter(
+                x=ticks["t"], y=ticks["cvd_5m"],
+                name="CVD 5m",
+                line=dict(color="#3fb950", width=1.5),
+                fill="tozeroy",
+            ), row=2, col=1)
+            fig_live.update_layout(
+                height=360,
+                paper_bgcolor="#0d1117",
+                plot_bgcolor="#161b22",
+                font_color="#c9d1d9",
+                legend=dict(bgcolor="#161b22", bordercolor="#30363d"),
+                margin=dict(l=0, r=0, t=10, b=0),
+            )
+            fig_live.update_yaxes(gridcolor="#21262d", zerolinecolor="#30363d")
+            fig_live.update_xaxes(gridcolor="#21262d")
+            fig_live.update_yaxes(title_text="Price", row=1, col=1)
+            fig_live.update_yaxes(title_text="CVD $", row=2, col=1)
+            st.plotly_chart(fig_live, use_container_width=True)
+
+        whales = query_live(
+            """
+            SELECT traded_at, side, price, volume_usd, quantity
+            FROM whales
+            WHERE symbol = ?
+            ORDER BY ts_ms DESC
+            LIMIT 15
+            """,
+            (symbol,),
+        )
+        if not whales.empty:
+            st.caption("Recent whale trades (live)")
+            st.dataframe(whales, use_container_width=True, hide_index=True)
+
+    except Exception as e:
+        st.warning(f"Live panel unavailable: {e}")
+
 
 # =============================================================
-# Header · KPI metrics
+# Header · Live stream KPIs
 # =============================================================
 
 st.title("📈 Crypto Analytics Dashboard")
 
 color = SYMBOL_COLORS[symbol]
+
+
+@st.fragment(run_every=2 if live_refresh else None)
+def live_panel():
+    _render_live_panel(symbol, color)
+
+
+live_panel()
+
+st.divider()
+st.subheader("📦 Batch layer · dbt / DuckDB")
+
+# =============================================================
+# Header · KPI metrics (batch)
+# =============================================================
 
 try:
     kpi = query(f"""
@@ -496,4 +622,12 @@ with col_v2:
 # =============================================================
 
 st.divider()
-st.caption("Data: Binance WebSocket API · Pipeline: Kafka → dbt → DuckDB · Built with Streamlit")
+st.caption(
+    "Data: Binance WebSocket API · "
+    "Pipeline: Kafka → live SQLite + Parquet/dbt → DuckDB · Built with Streamlit"
+)
+
+# Full-page refresh only for batch layer (live uses st.fragment)
+if auto_refresh and not live_refresh:
+    time.sleep(30)
+    st.rerun()
